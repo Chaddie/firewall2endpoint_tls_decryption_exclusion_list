@@ -1,9 +1,8 @@
 import { applyImport, listExcludedSites, type CentralAuth } from "@/lib/central";
-import { clientSecretFromEnv, isDataRegion, publicDefaults } from "@/lib/env";
 import { sampleEndpointSites } from "@/lib/fixtures";
 import { HttpError } from "@/lib/http-error";
 import { planImport } from "@/lib/plan-import";
-import type { Candidate, ImportMode } from "@/lib/types";
+import { isDataRegion, type Candidate, type ImportMode } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -14,7 +13,6 @@ type ImportBody = {
   firewallUser?: string;
   clientId?: string;
   clientSecret?: string;
-  useEnvClientSecret?: boolean;
   tenantId?: string;
   dataRegion?: string;
 };
@@ -78,21 +76,19 @@ export async function POST(request: Request) {
 }
 
 function requireCentral(body: ImportBody): CentralAuth {
-  const defaults = publicDefaults();
-  const clientId = body.clientId?.trim() || defaults.clientId;
-  const typedSecret = body.clientSecret?.trim() ?? "";
-  const clientSecret = typedSecret || (body.useEnvClientSecret ? clientSecretFromEnv() : "");
+  const clientId = body.clientId?.trim() ?? "";
+  const clientSecret = body.clientSecret?.trim() ?? "";
   if (!clientId || !clientSecret) {
     throw new HttpError(400, "Enter the Sophos Central client ID and client secret.");
   }
-  const region = body.dataRegion?.trim() || defaults.dataRegion;
+  const region = body.dataRegion?.trim() ?? "";
   if (region && !isDataRegion(region)) {
     throw new HttpError(400, "Data region is not one of the Endpoint API regions.");
   }
   return {
     clientId,
     clientSecret,
-    tenantId: body.tenantId?.trim() || defaults.tenantId || undefined,
+    tenantId: body.tenantId?.trim() || undefined,
     dataRegion: region || undefined,
   };
 }

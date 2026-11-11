@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import { Loader2, Search } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -25,26 +25,14 @@ import { batchPlan, planImport } from "@/lib/plan-import";
 import type { Candidate, ExclusionLoad, ImportMode, ImportResult } from "@/lib/types";
 import { DATA_REGIONS as REGIONS } from "@/lib/types";
 
-type Defaults = {
-  firewallUrl: string;
-  firewallUser: string;
-  clientId: string;
-  tenantId: string;
-  dataRegion: string;
-  hasFirewallApiKey: boolean;
-  hasClientSecret: boolean;
-};
-
 type FormState = {
   mode: "sample" | "live";
   firewallUrl: string;
   firewallUser: string;
   firewallApiKey: string;
-  useEnvFirewallKey: boolean;
   allowInsecureTls: boolean;
   clientId: string;
   clientSecret: string;
-  useEnvClientSecret: boolean;
   tenantId: string;
   dataRegion: string;
 };
@@ -54,18 +42,15 @@ const emptyForm: FormState = {
   firewallUrl: "",
   firewallUser: "",
   firewallApiKey: "",
-  useEnvFirewallKey: false,
   allowInsecureTls: false,
   clientId: "",
   clientSecret: "",
-  useEnvClientSecret: false,
   tenantId: "",
   dataRegion: "",
 };
 
 export function ImporterApp() {
   const [form, setForm] = useState<FormState>(emptyForm);
-  const [defaults, setDefaults] = useState<Defaults | null>(null);
   const [load, setLoad] = useState<ExclusionLoad | null>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [query, setQuery] = useState("");
@@ -75,33 +60,6 @@ export function ImporterApp() {
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [confirmReplace, setConfirmReplace] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    fetch("/api/defaults")
-      .then((response) => response.json())
-      .then((data: Defaults) => {
-        if (cancelled) return;
-        setDefaults(data);
-        setForm((current) => ({
-          ...current,
-          firewallUrl: data.firewallUrl || current.firewallUrl,
-          firewallUser: data.firewallUser || current.firewallUser,
-          clientId: data.clientId || current.clientId,
-          tenantId: data.tenantId || current.tenantId,
-          dataRegion: data.dataRegion || current.dataRegion,
-          useEnvFirewallKey: data.hasFirewallApiKey,
-          useEnvClientSecret: data.hasClientSecret,
-          mode: data.firewallUrl ? "live" : current.mode,
-        }));
-      })
-      .catch(() => {
-        if (!cancelled) setDefaults(null);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const visible = useMemo(() => {
     const needle = query.trim().toLowerCase();
@@ -171,7 +129,6 @@ export function ImporterApp() {
                 firewallUser: form.firewallUser,
                 clientId: form.clientId,
                 clientSecret: form.clientSecret,
-                useEnvClientSecret: form.useEnvClientSecret,
                 tenantId: form.tenantId,
                 dataRegion: form.dataRegion,
               },
@@ -238,7 +195,8 @@ export function ImporterApp() {
           <CardTitle>Connection</CardTitle>
           <CardDescription>
             Sample data walks the whole path with no credentials. Live mode calls Sophos from this server, so the
-            browser never talks to the firewall or Central directly. Keys stay in this tab and are cleared on reload.
+            browser never talks to the firewall or Central directly. Type the connection settings here. They stay in
+            this tab only and are cleared on reload.
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
@@ -291,25 +249,16 @@ export function ImporterApp() {
                 <Field
                   label="API key"
                   id="firewall-key"
-                  hint="Bearer token from Administration, API access. Environment name: SOPHOS_FIREWALL_PASSWORD."
+                  hint="Bearer token from Administration, API access."
                 >
                   <Input
                     id="firewall-key"
                     type="password"
                     value={form.firewallApiKey}
                     autoComplete="off"
-                    placeholder={defaults?.hasFirewallApiKey ? "Using the server environment unless you type a key" : ""}
                     onChange={(event) => setForm({ ...form, firewallApiKey: event.target.value })}
                   />
                 </Field>
-                {defaults?.hasFirewallApiKey ? (
-                  <Toggle
-                    id="use-env-key"
-                    label="Use the API key from the server environment when the field is empty"
-                    checked={form.useEnvFirewallKey}
-                    onCheckedChange={(checked) => setForm({ ...form, useEnvFirewallKey: checked })}
-                  />
-                ) : null}
                 <Toggle
                   id="insecure-tls"
                   label="Trust this firewall's certificate"
@@ -331,24 +280,15 @@ export function ImporterApp() {
                     onChange={(event) => setForm({ ...form, clientId: event.target.value })}
                   />
                 </Field>
-                <Field label="Client secret" id="client-secret" hint="Environment name: SOPHOS_CLIENT_SECRET.">
+                <Field label="Client secret" id="client-secret">
                   <Input
                     id="client-secret"
                     type="password"
                     value={form.clientSecret}
                     autoComplete="off"
-                    placeholder={defaults?.hasClientSecret ? "Using the server environment unless you type a secret" : ""}
                     onChange={(event) => setForm({ ...form, clientSecret: event.target.value })}
                   />
                 </Field>
-                {defaults?.hasClientSecret ? (
-                  <Toggle
-                    id="use-env-secret"
-                    label="Use the client secret from the server environment when the field is empty"
-                    checked={form.useEnvClientSecret}
-                    onCheckedChange={(checked) => setForm({ ...form, useEnvClientSecret: checked })}
-                  />
-                ) : null}
                 <Field label="Tenant ID" id="tenant-id" hint="Leave blank to use the tenant returned by Who am I.">
                   <Input
                     id="tenant-id"

@@ -8,15 +8,14 @@ The browser talks only to this app. Route handlers call the firewall and Sophos 
 
 ```bash
 npm install
-cp .env.example .env.local
 npm run dev
 ```
 
 Open http://127.0.0.1:3847.
 
-Leave the env file empty and choose **Sample data**, then **Load sample exclusions**. Select or edit sites and import. Sample mode shows the Endpoint request body and does not call Sophos.
+Choose **Sample data**, then **Load sample exclusions**. Select or edit sites and import. Sample mode shows the Endpoint request body and does not call Sophos.
 
-For a live firewall and tenant, fill in `.env.local` or type the values in **Live Sophos**. Secrets stay in the tab and are not written to the repository. If a secret is set only in the environment, leave the field blank and keep “use the server environment” on. The firewall URL can be the appliance origin (`https://firewall.example:4444`) or the API base ending in `/api/firewall-config/v1`.
+For a live firewall and tenant, choose **Live Sophos** and type the firewall URL, API key, and Sophos Central credentials in the form. Those values stay in the browser tab for the session and are not read from the environment. The firewall URL can be the appliance origin (`https://firewall.example:4444`) or the API base ending in `/api/firewall-config/v1`.
 
 Live firewall access uses the Sophos Firewall v23 configuration REST API (`/api/firewall-config/v1`), not the older XML API.
 

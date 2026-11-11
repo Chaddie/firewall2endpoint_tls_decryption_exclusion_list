@@ -1,10 +1,9 @@
 import { listExcludedSites, type CentralAuth } from "@/lib/central";
-import { publicDefaults, clientSecretFromEnv, firewallApiKeyFromEnv, isDataRegion } from "@/lib/env";
 import { extractSnapshot } from "@/lib/extract";
 import { sampleEndpointSites, sampleSnapshot } from "@/lib/fixtures";
 import { pullFirewall } from "@/lib/firewall";
 import { HttpError } from "@/lib/http-error";
-import type { EndpointSite, ExclusionLoad, FirewallSnapshot } from "@/lib/types";
+import { isDataRegion, type EndpointSite, type ExclusionLoad, type FirewallSnapshot } from "@/lib/types";
 
 export const dynamic = "force-dynamic";
 
@@ -13,11 +12,9 @@ type LoadBody = {
   firewallUrl?: string;
   firewallUser?: string;
   firewallApiKey?: string;
-  useEnvFirewallKey?: boolean;
   allowInsecureTls?: boolean;
   clientId?: string;
   clientSecret?: string;
-  useEnvClientSecret?: boolean;
   tenantId?: string;
   dataRegion?: string;
 };
@@ -38,15 +35,10 @@ export async function POST(request: Request) {
       return Response.json({ error: "Choose sample data or a live firewall." }, { status: 400 });
     }
 
-    const apiKey = secretOrEnv(body.firewallApiKey, body.useEnvFirewallKey, firewallApiKeyFromEnv());
-    const firewallUrl = body.firewallUrl?.trim() || publicDefaults().firewallUrl;
+    const apiKey = body.firewallApiKey?.trim() ?? "";
+    const firewallUrl = body.firewallUrl?.trim() ?? "";
     if (!firewallUrl) return Response.json({ error: "Enter the firewall URL." }, { status: 400 });
-    if (!apiKey) {
-      return Response.json(
-        { error: "Enter the firewall API key, or use the key from the server environment." },
-        { status: 400 },
-      );
-    }
+    if (!apiKey) return Response.json({ error: "Enter the firewall API key." }, { status: 400 });
 
     const snapshot = await pullFirewall({
       baseUrl: firewallUrl,
@@ -94,11 +86,10 @@ function buildLoad(snapshot: FirewallSnapshot, endpointSites: EndpointSite[] | n
 }
 
 function centralAuth(body: LoadBody): { auth: CentralAuth | null; warning?: string } {
-  const defaults = publicDefaults();
-  const clientId = body.clientId?.trim() || defaults.clientId;
-  const clientSecret = secretOrEnv(body.clientSecret, body.useEnvClientSecret, clientSecretFromEnv());
-  const tenantId = body.tenantId?.trim() || "";
-  const region = body.dataRegion?.trim() || defaults.dataRegion;
+  const clientId = body.clientId?.trim() ?? "";
+  const clientSecret = body.clientSecret?.trim() ?? "";
+  const tenantId = body.tenantId?.trim() ?? "";
+  const region = body.dataRegion?.trim() ?? "";
   if (!clientId && !clientSecret && !tenantId && !region) return { auth: null };
   if (!clientId || !clientSecret) {
     return {
@@ -113,17 +104,10 @@ function centralAuth(body: LoadBody): { auth: CentralAuth | null; warning?: stri
     auth: {
       clientId,
       clientSecret,
-      tenantId: tenantId || defaults.tenantId || undefined,
+      tenantId: tenantId || undefined,
       dataRegion: region || undefined,
     },
   };
-}
-
-function secretOrEnv(typed: string | undefined, useEnv: boolean | undefined, envValue: string): string {
-  const value = typed?.trim() ?? "";
-  if (value) return value;
-  if (useEnv) return envValue;
-  return "";
 }
 
 function failure(error: unknown) {

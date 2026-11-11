@@ -142,3 +142,7 @@ export const DATA_REGIONS = [
 ] as const;
 
 export type DataRegion = (typeof DATA_REGIONS)[number];
+
+export function isDataRegion(value: string): value is DataRegion {
+  return (DATA_REGIONS as readonly string[]).includes(value);
+}
