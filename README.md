@@ -18,6 +18,8 @@ Leave the env file empty and choose **Sample data**, then **Load sample exclusio
 
 For a live firewall and tenant, fill in `.env.local` or type the values in **Live Sophos**. Secrets stay in the tab and are not written to the repository. If a secret is set only in the environment, leave the field blank and keep “use the server environment” on. The firewall URL can be the appliance origin (`https://firewall.example:4444`) or the API base ending in `/api/firewall-config/v1`.
 
+Live firewall access uses the Sophos Firewall v23 configuration REST API (`/api/firewall-config/v1`), not the older XML API.
+
 Certificate checks for the firewall stay on unless you turn on “Trust this firewall's certificate” for an appliance you trust.
 
 ## What gets imported
